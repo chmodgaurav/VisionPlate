@@ -1,0 +1,6 @@
+names:
+  0: license_plate
+nc: 1
+path: C:\Users\qubit\OneDrive\Documents\ANPR\Dataset
+train: images
+val: images
