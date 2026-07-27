@@ -1,11 +1,10 @@
+ultralytics
 torch
 torchvision
-ultralytics
-opencv-python-headless
-numpy<2
-Pillow
-pandas
-pyyaml
 easyocr
 streamlit
-pytesseract
+numpy
+Pillow
+opencv-python
+pandas
+tqdm

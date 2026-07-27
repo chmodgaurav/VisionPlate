@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "visionplate"
+version = "0.1.0"
+description = "License plate detection and training pipeline using YOLOv8."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "ultralytics",
+    "torch",
+    "torchvision",
+    "easyocr",
+    "streamlit",
+    "numpy",
+    "Pillow",
+    "opencv-python",
+    "pandas",
+    "tqdm",
+]
+keywords = ["license-plate", "anpr", "yolo", "computer-vision", "streamlit"]
+authors = [
+    {name = "VisionPlate"}
+]
+
+[tool.setuptools]
+packages = ["models"]
