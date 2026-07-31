@@ -5,6 +5,6 @@ easyocr
 streamlit
 numpy
 Pillow
-opencv-python
+opencv-python-headless
 pandas
 tqdm
