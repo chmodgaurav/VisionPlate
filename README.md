@@ -1,84 +1,108 @@
-# KnightSight ANPR Pipeline
+# Knight-Sight — ANPR & Vehicle Intelligence Pipeline
 
-A modular, edge-friendly Automatic Number Plate Recognition (ANPR) and Vehicle Intelligence pipeline for research and small deployments. The project integrates vehicle detection, plate localization, and OCR-based text extraction with a Streamlit demo and training utilities.
+A modular, edge-friendly Automatic Number Plate Recognition (ANPR) pipeline for research and small deployments. Combines vehicle detection, plate localization, and OCR-based text extraction, with a Streamlit demo and YOLOv8 training utilities.
 
-## Highlights
+## Pipeline
 
-- End-to-end: vehicle detection → plate localization → OCR.
-- Lightweight models: designed to work with Ultralytics YOLO (v8) lightweight backbones for edge use.
-- Modular: separate components under `models/` for vehicle and plate detection and the ANPR OCR engine.
-- Demo: Streamlit interface available for quick testing and visualization.
+```
+Image / Frame
+     │
+     ▼
+Vehicle Detector   (models/vehicle_detector.py)
+     │
+     ▼
+Plate Detector     (models/plate_detector.py)   ← YOLOv8
+     │
+     ▼
+ANPR Engine        (models/anpr_engine.py)      ← OCR text extraction
+     │
+     ▼
+Annotated image + plate text + OCR confidence
+```
 
-## Quick Start
+`pipeline.py` also applies CLAHE-based low-light enhancement and adaptive-threshold glare mitigation to plate crops before OCR.
 
-1. Create and activate a Python virtual environment (recommended):
+## Project Structure
+
+| Path | Purpose |
+|---|---|
+| `streamlit_app.py` | Web demo for upload-and-inspect inference |
+| `pipeline.py` | `VehicleIntelligencePipeline` — end-to-end orchestration |
+| `models/` | Vehicle detector, plate detector, ANPR/OCR engine |
+| `train_yolov8.py` | YOLOv8 training script for the plate detector |
+| `data.yaml` | Ultralytics dataset config (single class: `license_plate`) |
+| `Dataset/` | Training images and YOLO-format labels |
+| `yolov8n.pt` | Pretrained YOLOv8 nano weights |
+
+## Requirements
+
+- Python 3.9+
+- A CUDA-capable GPU is recommended for training (CPU works for inference and quick tests)
+- Tesseract OCR system binary, if the ANPR engine is configured to use it (`sudo apt-get install tesseract-ocr`)
+
+## Installation
 
 ```bash
+git clone https://github.com/chmodgaurav/Knight-Sight.git
+cd Knight-Sight
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-```
-
-2. Install Python dependencies:
-
-```bash
 pip install -r requirements.txt
 ```
 
-3. Run the Streamlit demo:
+## Usage
+
+### Streamlit demo
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
-Open the shown local URL (usually `http://localhost:8501`) to upload images and run inference.
+Open `http://localhost:8501`, upload an image, and view detected vehicles, plates, and OCR results.
 
-## Using the Pipeline in Code
-
-Import and run the pipeline from `pipeline.py`:
+### Programmatic use
 
 ```python
 import cv2
 from pipeline import VehicleIntelligencePipeline
 
 pipeline = VehicleIntelligencePipeline()
-image = cv2.imread('path/to/image.jpg')
+image = cv2.imread("path/to/image.jpg")
 results, vehicles, plates = pipeline.process_image(image_array=image)
 
 for r in results:
-    print(r.get('plate_text'), r.get('ocr_confidence'))
+    print(r.get("plate_text"), r.get("ocr_confidence"))
 
 annotated = pipeline.annotate_image(image, results, vehicles)
-cv2.imwrite('output.jpg', annotated)
+cv2.imwrite("output.jpg", annotated)
 ```
 
-## Data Preparation & Training
+## Data & Training
 
-- Dataset location: `Dataset/images` and `Dataset/labels` (YOLO format). Verify these exist before training.
-- Convert JSON annotations to YOLO format (if needed):
+Dataset lives under `Dataset/images` and `Dataset/labels` in YOLO format, referenced by `data.yaml`:
 
-```bash
-python scripts/convert_json_to_yolo.py
+```yaml
+path: ./Dataset
+train: images
+val: images
+nc: 1
+names:
+  0: 'license_plate'
 ```
 
-- Training (example using the included `train_yolov8.py`):
+Train the plate detector:
 
 ```bash
-# GPU training (adjust device/batch/epochs as needed)
-python train_yolov8.py --epochs 50 --batch 8 --img 640 --device 0
+# GPU
+python train_yolov8.py --data data.yaml --epochs 50 --batch 8 --imgsz 640 --model yolov8n.pt
 
 # CPU quick test
-python train_yolov8.py --epochs 1 --batch 2 --img 640 --device cpu
+python train_yolov8.py --data data.yaml --epochs 1 --batch 2 --imgsz 640
 ```
 
-Trained weights are saved under `runs/` by default. The demo and `models/plate_detector.py` will look for model files like `yolov8n.pt` or your trained checkpoint.
+Trained weights are saved under `runs/train/<run-name>/weights/`. `models/plate_detector.py` and the Streamlit demo expect a weights file such as `yolov8n.pt` or a checkpoint from a completed run.
 
-## Notes
+## License
 
-- If you use Tesseract for OCR, install the system binary (e.g., `sudo apt-get install tesseract-ocr`).
-- The repository contains: `streamlit_app.py`, `pipeline.py`, `train_yolov8.py`, `models/`, and `Dataset/`.
-
-## License & Acknowledgements
-Built with Ultralytics YOLOv8, Streamlit, and OCR tools.
-
-If you want, I can also add a brief troubleshooting section or a contributing guide.
+Built with Ultralytics YOLOv8, Streamlit, and OCR tooling. See repository for license details.
